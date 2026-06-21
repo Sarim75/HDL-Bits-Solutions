@@ -1,0 +1,18 @@
+                      Sign Extension
+Used to increase the width of a signed number while preserving its value.
+Rule:
+If sign bit = 0 → extend with 0s.
+If sign bit = 1 → extend with 1s.
+Examples:
+0101 (+5) → 00000101 (+5)
+1101 (-3) → 11111101 (-3)
+Replication operator:
+{N{expression}}
+Examples:
+{4{1'b1}} = 1111
+{4{1'b0}} = 0000
+Sign extension of a 4-bit number to 8 bits:
+{{4{in[3]}}, in}
+where in[3] is the sign bit.
+
+
