@@ -1,18 +1,546 @@
-                      Sign Extension
-Used to increase the width of a signed number while preserving its value.
-Rule:
-If sign bit = 0 → extend with 0s.
-If sign bit = 1 → extend with 1s.
-Examples:
-0101 (+5) → 00000101 (+5)
-1101 (-3) → 11111101 (-3)
-Replication operator:
+# Verilog Learning Notes
+
+## Table of Contents
+
+1. Bitwise vs Logical Operators
+2. Reduction Operators
+3. Concatenation Operator
+4. Replication Operator
+5. Sign Extension
+6. XOR and XNOR
+7. HDLBits Pairwise Comparison Trick
+8. Common Mistakes
+
+---
+
+# 1. Bitwise vs Logical Operators
+
+## Bitwise Operators
+
+Operate on each bit individually.
+
+| Operator | Meaning      |
+| -------- | ------------ |
+| &        | Bitwise AND  |
+| |        | Bitwise OR   |
+| ^        | Bitwise XOR  |
+| ~        | Bitwise NOT  |
+| ~^ or ^~ | Bitwise XNOR |
+
+### Example
+
+```verilog
+a = 3'b101;
+b = 3'b110;
+```
+
+```text
+a | b = 111
+a & b = 100
+a ^ b = 011
+~a    = 010
+```
+
+### Key Point
+
+Bitwise operators compare corresponding bits of two vectors.
+
+---
+
+## Logical Operators
+
+Treat the entire vector as a single true/false value.
+
+### Rule
+
+```text
+0        = False
+Non-zero = True
+```
+
+| Operator | Meaning     |   |            |
+| -------- | ----------- | - | ---------- |
+| &&       | Logical AND |   |            |
+|          |             |   | Logical OR |
+| !        | Logical NOT |   |            |
+
+### Example
+
+```verilog
+a = 3'b101;
+b = 3'b000;
+```
+
+```text
+a || b = 1
+a && b = 0
+!a     = 0
+```
+
+### Key Point
+
+Logical operators usually produce a 1-bit result.
+
+---
+
+# 2. Reduction Operators
+
+Reduction operators apply an operation to all bits of a vector.
+
+## Reduction AND
+
+```verilog
+&in
+```
+
+Equivalent to:
+
+```verilog
+in[0] & in[1] & in[2] & in[3]
+```
+
+## Reduction OR
+
+```verilog
+|in
+```
+
+Equivalent to:
+
+```verilog
+in[0] | in[1] | in[2] | in[3]
+```
+
+## Reduction XOR
+
+```verilog
+^in
+```
+
+Equivalent to:
+
+```verilog
+in[0] ^ in[1] ^ in[2] ^ in[3]
+```
+
+### Example
+
+```verilog
+in = 4'b1011;
+```
+
+```text
+&in = 0
+|in = 1
+^in = 1
+```
+
+---
+
+# 3. Concatenation Operator
+
+Used to combine multiple vectors into one larger vector.
+
+## Syntax
+
+```verilog
+{A, B}
+```
+
+### Example
+
+```verilog
+{4'b1010, 4'b1100}
+```
+
+Result:
+
+```text
+10101100
+```
+
+### Rule
+
+```text
+Left item  -> Higher bits
+Right item -> Lower bits
+```
+
+---
+
+## Upper Half and Lower Half
+
+Example:
+
+```verilog
+assign out_not = {~b, ~a};
+```
+
+```text
+Upper bits = ~b
+Lower bits = ~a
+```
+
+---
+
+## Concatenation on the Left Side
+
+```verilog
+assign {w, x, y, z} = data;
+```
+
+Used to split a large vector into smaller vectors.
+
+---
+
+## Concatenation on the Right Side
+
+```verilog
+assign out = {a, b, c, d};
+```
+
+Used to join vectors together.
+
+---
+
+# 4. Replication Operator
+
+Repeats an expression multiple times.
+
+## Syntax
+
+```verilog
 {N{expression}}
-Examples:
-{4{1'b1}} = 1111
-{4{1'b0}} = 0000
-Sign extension of a 4-bit number to 8 bits:
-{{4{in[3]}}, in}
-where in[3] is the sign bit.
+```
 
+### Example
 
+```verilog
+{4{1'b1}}
+```
+
+Result:
+
+```text
+1111
+```
+
+### Example
+
+```verilog
+{4{1'b0}}
+```
+
+Result:
+
+```text
+0000
+```
+
+---
+
+## Replicating a Vector
+
+```verilog
+{5{{a,b,c,d,e}}}
+```
+
+Step 1:
+
+```verilog
+{a,b,c,d,e}
+```
+
+creates:
+
+```text
+abcde
+```
+
+Step 2:
+
+```verilog
+{5{{a,b,c,d,e}}}
+```
+
+creates:
+
+```text
+abcdeabcdeabcdeabcdeabcde
+```
+
+---
+
+# 5. Sign Extension
+
+Used to increase the width of a signed number while preserving its value.
+
+## Rule
+
+```text
+MSB = Sign Bit
+
+0 -> Positive
+1 -> Negative
+```
+
+---
+
+### Example 1
+
+```text
+0101 = +5
+```
+
+Extend to 8 bits:
+
+```text
+00000101
+```
+
+Still equals +5.
+
+---
+
+### Example 2
+
+```text
+1101 = -3
+```
+
+Extend to 8 bits:
+
+```text
+11111101
+```
+
+Still equals -3.
+
+---
+
+## Sign Extension Using Replication
+
+8-bit to 32-bit:
+
+```verilog
+assign out = {{24{in[7]}}, in};
+```
+
+Explanation:
+
+```text
+24 copies of sign bit
++
+original 8 bits
+=
+32 bits
+```
+
+---
+
+# 6. XOR and XNOR
+
+## XOR
+
+Outputs 1 when inputs are different.
+
+### Truth Table
+
+```text
+A B | XOR
+0 0 | 0
+0 1 | 1
+1 0 | 1
+1 1 | 0
+```
+
+### Memory Trick
+
+```text
+Different -> 1
+```
+
+---
+
+## XNOR
+
+Outputs 1 when inputs are equal.
+
+### Truth Table
+
+```text
+A B | XNOR
+0 0 | 1
+0 1 | 0
+1 0 | 0
+1 1 | 1
+```
+
+### Memory Trick
+
+```text
+Same -> 1
+```
+
+### Verilog
+
+```verilog
+a ~^ b
+```
+
+or
+
+```verilog
+a ^~ b
+```
+
+---
+
+# 7. HDLBits Pairwise Comparison Trick
+
+Problem:
+
+Compare all pairs of:
+
+```text
+a, b, c, d, e
+```
+
+Build vector 1:
+
+```verilog
+{{5{a}}, {5{b}}, {5{c}}, {5{d}}, {5{e}}}
+```
+
+Result:
+
+```text
+aaaaabbbbbcccccdddddeeeee
+```
+
+Build vector 2:
+
+```verilog
+{5{{a,b,c,d,e}}}
+```
+
+Result:
+
+```text
+abcdeabcdeabcdeabcdeabcde
+```
+
+Compare using XNOR:
+
+```verilog
+assign out =
+    {{5{a}}, {5{b}}, {5{c}}, {5{d}}, {5{e}}}
+    ~^
+    {5{{a,b,c,d,e}}};
+```
+
+Because:
+
+```text
+XNOR = 1 when equal
+```
+
+This generates all 25 pairwise comparisons.
+
+---
+
+# 8. Common Mistakes
+
+## Bitwise vs Logical
+
+Wrong:
+
+```verilog
+a || b
+```
+
+when bitwise OR is required.
+
+Correct:
+
+```verilog
+a | b
+```
+
+---
+
+## Logical NOT vs Bitwise NOT
+
+Wrong:
+
+```verilog
+!a
+```
+
+when every bit must be inverted.
+
+Correct:
+
+```verilog
+~a
+```
+
+---
+
+## Concatenation Brackets
+
+Wrong:
+
+```verilog
+[a,b]
+```
+
+Correct:
+
+```verilog
+{a,b}
+```
+
+---
+
+## Replication Syntax
+
+Wrong:
+
+```verilog
+{5{a,b,c,d,e}}
+```
+
+Correct:
+
+```verilog
+{5{{a,b,c,d,e}}}
+```
+
+---
+
+## Width Mismatch
+
+Always count bits on both sides of an assignment.
+
+Example:
+
+```verilog
+output [31:0] out;
+```
+
+Right side must produce 32 bits.
+
+---
+
+# HDLBits Checklist
+
+Before submitting:
+
+* Check vector widths.
+* Check bit count on both sides.
+* Verify bitwise vs logical operators.
+* Verify concatenation order.
+* Verify replication syntax.
+* Verify sign-extension width.
+* Check for missing braces.
